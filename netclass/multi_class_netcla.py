@@ -1,0 +1,63 @@
+__author__ = 'alexh'
+#! /usr/bin/python
+import numpy as np
+import xgboost as xgb
+
+# label need to be 0 to num_class -1
+#data = np.loadtxt('./dermatology.data', delimiter=',',converters={33: lambda x:int(x == '?'), 34: lambda x:int(x)-1 } )
+
+root_folder = '/data/jim/alex/xgb/NetCla/data/'
+train_X = np.loadtxt(root_folder + '/train.csv', delimiter='\t', skiprows=1)
+train_Y = np.loadtxt(root_folder + '/train_target.csv')
+test_X = np.loadtxt(root_folder + '/valid.csv', delimiter='\t', skiprows=1)
+test_Y = np.loadtxt(root_folder + '/valid_target.csv')
+
+print ("loaded train and target")
+
+#szz = data.shape
+
+print ("{0} {1}".format(train_X.shape, test_X.shape))
+
+#train = data[:int(sz[0] * 0.7), :]
+#test = data[int(sz[0] * 0.7):, :]
+
+#train_X = train[:,0:33]
+#train_Y = train[:, 34]
+
+#test_X = test[:,0:33]
+#test_Y = test[:, 34]
+
+xg_train = xgb.DMatrix( train_X, label=train_Y)
+xg_test = xgb.DMatrix(test_X, label=test_Y)
+# setup parameters for xgboost
+param = {}
+# use softmax multi-class classification
+param['objective'] = 'multi:softmax'
+# scale weight of positive examples
+param['eta'] = 0.2
+param['max_depth'] = 10
+param['silent'] = 1
+param['nthread'] = 20
+param['num_class'] = 43
+
+watchlist = [ (xg_train,'train'), (xg_test, 'test') ]
+num_round = 50
+bst = xgb.train(param, xg_train, num_round, watchlist );
+# get prediction
+pred = bst.predict( xg_test );
+
+print pred.shape
+print pred[0:10]
+np.savetxt(root_folder + '/pred.csv', pred, fmt="%i")
+print ('predicting, classification error=%f' % (sum( int(pred[i]) != test_Y[i] for i in range(len(test_Y))) / float(len(test_Y)) ))
+
+# do the same thing again, but output probabilities
+#param['objective'] = 'multi:softprob'
+#bst = xgb.train(param, xg_train, num_round, watchlist );
+# Note: this convention has been changed since xgboost-unity
+# get prediction, this is in 1D array, need reshape to (ndata, nclass)
+#yprob = bst.predict( xg_test ).reshape( test_Y.shape[0], 6 )
+#ylabel = np.argmax(yprob, axis=1)
+
+#print ('predicting, classification error=%f' % (sum( int(ylabel[i]) != test_Y[i] for i in range(len(test_Y))) / float(len(test_Y)) ))
+
