@@ -17,6 +17,8 @@ if __name__ == "__main__":
                           " This example only runs on Python 3.4")
     set_start_method("forkserver")
 
+    os.environ["OMP_NUM_THREADS"] = "2"  # or to whatever you want
+
     import numpy as np
     from sklearn.grid_search import GridSearchCV
     from sklearn.datasets import load_boston
@@ -24,16 +26,13 @@ if __name__ == "__main__":
 
     rng = np.random.RandomState(31337)
 
-    print("Parallel Parameter optimization")
-    boston = load_boston()
-
-    os.environ["OMP_NUM_THREADS"] = "2"  # or to whatever you want
     y = boston['target']
     X = boston['data']
-    xgb_model = xgb.XGBRegressor()
+    xgb_model = xgb.XGBClassifier()
     clf = GridSearchCV(xgb_model, {'max_depth': [2, 4, 6],
                                    'n_estimators': [50, 100, 200]}, verbose=1,
-                       n_jobs=2)
+                       n_jobs=2,
+                       )
     clf.fit(X, y)
     print(clf.best_score_)
 print(clf.best_params_)
